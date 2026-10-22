@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.12-slim AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -6,11 +6,29 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# The service uses only the Python standard library at runtime.
+# Test stage: development-only dependencies and tests never enter the runtime image.
+FROM base AS test
+
+COPY requirements-dev.txt /app/requirements-dev.txt
+RUN python -m pip install --no-cache-dir -r requirements-dev.txt
+
+COPY app/ /app/app/
+COPY test/ /app/test/
+
+RUN python -m pytest -v /app/test
+
+# Runtime stage: only the application and Python runtime are included.
+FROM python:3.12-slim AS runtime
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
 RUN groupadd --system --gid 10001 appuser \
     && useradd --system --uid 10001 --gid appuser --no-create-home appuser
 
-COPY --chown=appuser:appuser app/app.py ./app.py
+COPY --chown=10001:10001 app/app.py ./app.py
 
 USER 10001:10001
 
