@@ -50,8 +50,11 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
-      - name: Build container image
-        run: docker build --pull -t devops-sre:pr-${{ github.event.pull_request.number }} .
+      - name: Run tests inside the Docker test stage
+        run: docker build --pull --target test -t devops-sre:test .
+
+      - name: Build production runtime image
+        run: docker build --pull --target runtime -t devops-sre:pr-${{ github.event.pull_request.number }} .
 
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@0.28.0
