@@ -1,0 +1,29 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: devops-sre-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: devops-sre.sre
+      rules:
+        - alert: DevOpsSREPodNotReady
+          expr: |
+            kube_pod_status_ready{namespace="devops-sre",condition="true"} == 0
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "DevOps-SRE pod is not ready"
+            description: "Pod {{ $labels.pod }} has not been ready for 2 minutes."
+        - alert: DevOpsSREContainerOOMKilled
+          expr: |
+            kube_pod_container_status_last_terminated_reason{namespace="devops-sre",reason="OOMKilled"} == 1
+          for: 0m
+          labels:
+            severity: critical
+          annotations:
+            summary: "DevOps-SRE container was OOMKilled"
+            description: "Container {{ $labels.container }} in pod {{ $labels.pod }} was OOMKilled."
