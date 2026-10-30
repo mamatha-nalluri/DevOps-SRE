@@ -1,0 +1,119 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-sre
+  namespace: devops-sre
+  labels:
+    app: devops-sre
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: devops-sre
+  template:
+    metadata:
+      labels:
+        app: devops-sre
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: app
+          image: docker.io/DOCKERHUB_USERNAME/devops-sre:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: devops-sre-config
+                  key: LOG_LEVEL
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 400Mi
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: devops-sre
+  namespace: devops-sre
+spec:
+  type: ClusterIP
+  selector:
+    app: devops-sre
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: devops-sre-quota
+  namespace: devops-sre
+spec:
+  hard:
+    requests.cpu: "1"
+    requests.memory: 512Mi
+    limits.cpu: "1"
+    limits.memory: 1Gi
+    pods: "4"
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: devops-sre
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-app-ingress
+  namespace: devops-sre
+spec:
+  podSelector:
+    matchLabels:
+      app: devops-sre
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 8080

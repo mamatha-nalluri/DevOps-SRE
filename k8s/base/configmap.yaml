@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: devops-sre-config
+  namespace: devops-sre
+data:
+  LOG_LEVEL: INFO
