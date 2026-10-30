@@ -13,7 +13,6 @@ logging.basicConfig(
 logger = logging.getLogger("memory-app")
 
 
-
 class HealthCheckHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/healthcheck':
@@ -30,12 +29,10 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
         pass
 
 
-
 def run_server():
     server = HTTPServer(('0.0.0.0', 8080), HealthCheckHandler)
     logger.info("Starting HTTP server on port 8080 for health checks...")
     server.serve_forever()
-
 
 
 def main():
