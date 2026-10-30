@@ -25,12 +25,9 @@ spec.loader.exec_module(app)
 HealthCheckHandler = app.HealthCheckHandler
 run_server = app.run_server
 
-# ──────────────────────────────────────────────
+
 # Test Server Fixture
-# ──────────────────────────────────────────────
 @pytest.fixture(scope="module")
-
-
 def test_server():
     """Start the app's HTTP server on a random free port for the test session."""
     server = HTTPServer(("127.0.0.1", 0), HealthCheckHandler)
@@ -39,21 +36,17 @@ def test_server():
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
 
-    yield port  # provide the port to tests
+    yield port
 
     server.shutdown()
 
-# ──────────────────────────────────────────────
+
 # Tests
-# ──────────────────────────────────────────────
-
-
 def test_healthcheck_status_200(test_server):
     port = test_server
     url = f"http://127.0.0.1:{port}/healthcheck"
     response = urllib.request.urlopen(url)
     assert response.status == 200, "Expected HTTP 200 from /healthcheck"
-
 
 
 def test_healthcheck_response_body(test_server):
@@ -64,14 +57,12 @@ def test_healthcheck_response_body(test_server):
     assert "healthy" in body
 
 
-
 def test_healthcheck_content_type(test_server):
     port = test_server
     url = f"http://127.0.0.1:{port}/healthcheck"
     response = urllib.request.urlopen(url)
     content_type = response.headers.get("Content-type", "")
     assert "application/json" in content_type
-
 
 
 def test_unknown_route_returns_404(test_server):
@@ -84,7 +75,6 @@ def test_unknown_route_returns_404(test_server):
         assert e.code == 404, f"Expected 404, got {e.code}"
 
 
-
 def test_memory_increment_calculation():
     target_increase_mb = 400
     duration_seconds = 120
@@ -93,7 +83,6 @@ def test_memory_increment_calculation():
 
     assert increment_bytes > 0, "Increment bytes must be positive"
     assert 3_000_000 < increment_bytes < 4_000_000
-
 
 
 def test_log_message_suppressed(capsys):
